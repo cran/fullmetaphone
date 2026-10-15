@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Phonetic matching of names with fullmetaphone</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Phonetic matching of names with
+fullmetaphone</h1>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#the-problem" id="toc-the-problem">The problem</a></li>
+<li><a href="#getting-started" id="toc-getting-started">Getting
+started</a></li>
+<li><a href="#choosing-the-code-length" id="toc-choosing-the-code-length">Choosing the code length</a></li>
+<li><a href="#how-the-codes-are-built" id="toc-how-the-codes-are-built">How the codes are built</a></li>
+<li><a href="#why-full-length-codes" id="toc-why-full-length-codes">Why
+full-length codes</a></li>
+<li><a href="#example-1.-finding-duplicate-records" id="toc-example-1.-finding-duplicate-records">Example 1. Finding
+duplicate records</a></li>
+<li><a href="#example-2.-linking-two-tables" id="toc-example-2.-linking-two-tables">Example 2. Linking two
+tables</a></li>
+<li><a href="#example-3.-searching-a-register-by-sound" id="toc-example-3.-searching-a-register-by-sound">Example 3. Searching a
+register by sound</a></li>
+<li><a href="#names-with-several-words" id="toc-names-with-several-words">Names with several words</a></li>
+<li><a href="#working-with-data-frames-and-the-tidyverse" id="toc-working-with-data-frames-and-the-tidyverse">Working with data
+frames and the tidyverse</a></li>
+<li><a href="#good-practice-and-limits" id="toc-good-practice-and-limits">Good practice and limits</a></li>
+<li><a href="#related-packages" id="toc-related-packages">Related
+packages</a></li>
+<li><a href="#credits" id="toc-credits">Credits</a></li>
+<li><a href="#references" id="toc-references">References</a></li>
+</ul>
+</div>
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(fullmetaphone)</span></code></pre></div>
+<div id="the-problem" class="section level2">
+<h2>The problem</h2>
+<p>Names are written down by people, and people spell the same name in
+different ways. Meyer, Meier, Mayer and Maier are one German surname.
+Catherine and Katherine are one first name. Stephen Phillips and Steven
+Philips may well be one person. Any join, lookup or duplicate check that
+relies on exact equality of names will miss these.</p>
+<p>Phonetic algorithms address this by turning a word into a code that
+stands for how it sounds. Words that sound alike get the same code, so
+records can be compared by code instead of by spelling. The idea goes
+back to <a href="https://en.wikipedia.org/wiki/Soundex">Soundex</a>,
+patented in 1918 and used for the United States Census. Lawrence Philips
+improved on it with <a href="https://en.wikipedia.org/wiki/Metaphone">Metaphone</a> in 1990,
+which follows the rules of English spelling far more closely. In 2000 he
+published <a href="https://web.archive.org/web/20250702064845/https://drdobbs.com/the-double-metaphone-search-algorithm/184401251">Double
+Metaphone</a>, which also handles names of German, Slavic, Italian,
+Spanish, French, Greek and Chinese origin, and which gives a second code
+where a name has two common pronunciations.</p>
+<p>This package provides both algorithms in R. Its main difference from
+other implementations is the length of the codes. Most implementations
+cut every code to four characters. Here codes keep up to 32 characters
+by default, which is the complete code for practically every real name,
+and the length can be set by the user. The sections below explain why
+that matters and show how to use the codes in common data tasks.</p>
+</div>
+<div id="getting-started" class="section level2">
+<h2>Getting started</h2>
+<p>The package has three functions.</p>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>metaphone(x)</code></td>
+<td>A character vector with one Metaphone code per element of
+<code>x</code>.</td>
+</tr>
+<tr class="even">
+<td><code>double_metaphone(x)</code></td>
+<td>A data frame with a <code>primary</code> and a
+<code>secondary</code> Double Metaphone code per element of
+<code>x</code>.</td>
+</tr>
+<tr class="odd">
+<td><code>sounds_like(x, y)</code></td>
+<td>A logical vector, <code>TRUE</code> where <code>x</code> and
+<code>y</code> share a code.</td>
+</tr>
+</tbody>
+</table>
+<p>They share the following arguments.</p>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Argument</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>max_length</code></td>
+<td><code>32</code></td>
+<td>The largest number of characters kept in each code. Use
+<code>Inf</code> for no limit, or <code>4</code> for the traditional
+short codes. See <a href="#choosing-the-code-length">Choosing the code
+length</a>.</td>
+</tr>
+<tr class="even">
+<td><code>by_word</code></td>
+<td><code>FALSE</code></td>
+<td>If <code>TRUE</code>, each word of a name is encoded separately and
+the codes are joined by spaces. See <a href="#names-with-several-words">Names with several words</a>.</td>
+</tr>
+<tr class="odd">
+<td><code>method</code></td>
+<td><code>&quot;double&quot;</code></td>
+<td><code>sounds_like()</code> only. <code>&quot;double&quot;</code> compares
+Double Metaphone codes, <code>&quot;metaphone&quot;</code> compares Metaphone
+codes.</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Meyer&quot;</span>, <span class="st">&quot;Meier&quot;</span>, <span class="st">&quot;Mayer&quot;</span>, <span class="st">&quot;Catherine&quot;</span>, <span class="st">&quot;Katherine&quot;</span>,</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>           <span class="st">&quot;Smith&quot;</span>, <span class="st">&quot;Schmidt&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">metaphone</span>(names)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;MYR&quot;   &quot;MR&quot;    &quot;MYR&quot;   &quot;K0RN&quot;  &quot;K0RN&quot;  &quot;SM0&quot;   &quot;SKMTT&quot;</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="fu">double_metaphone</span>(names)</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt;   primary secondary</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; 1      MR        MR</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; 2      MR        MR</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; 3      MR        MR</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt; 4    K0RN      KTRN</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; 5    K0RN      KTRN</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; 6     SM0       XMT</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; 7     XMT       SMT</span></span></code></pre></div>
+<p>All functions accept character vectors of any length and return one
+result per element. Missing values give <code>NA</code>. Each distinct
+value is encoded only once, so columns with many repeats are fast.</p>
+</div>
+<div id="choosing-the-code-length" class="section level2">
+<h2>Choosing the code length</h2>
+<p>The argument <code>max_length</code> controls how many characters of
+each code are kept. A code has roughly one character for each consonant
+sound, so it grows with the length of the name.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>long_name <span class="ot">&lt;-</span> <span class="st">&quot;Christopher Alexander Montgomery Fitzgerald&quot;</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">double_metaphone</span>(long_name)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt;                     primary                 secondary</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; 1 KRSTFRLKSNTRMNTKMRFTSKRLT KRSTFRLKSNTRMNTKMRFTSJRLT</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">double_metaphone</span>(long_name, <span class="at">max_length =</span> <span class="dv">4</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt;   primary secondary</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt; 1    KRST      KRST</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="fu">double_metaphone</span>(long_name, <span class="at">max_length =</span> <span class="dv">10</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt;      primary  secondary</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; 1 KRSTFRLKSN KRSTFRLKSN</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="fu">double_metaphone</span>(long_name, <span class="at">max_length =</span> <span class="cn">Inf</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt;                     primary                 secondary</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt; 1 KRSTFRLKSNTRMNTKMRFTSKRLT KRSTFRLKSNTRMNTKMRFTSJRLT</span></span></code></pre></div>
+<p>There are three common choices.</p>
+<ul>
+<li><strong>The default, 32.</strong> This keeps the complete code for
+practically every real name. Among the 5000 surnames in the included
+<code>us_surnames</code> data, the longest code has 8 characters, and
+even the four-part name above needs only 25. The limit only guards
+against unusually long strings, such as whole addresses passed in by
+mistake.</li>
+<li><strong><code>Inf</code>.</strong> No limit at all. Use it when you
+want the complete code whatever the input.</li>
+<li><strong><code>4</code>.</strong> The traditional length used by
+Philips’ original programs and by most other software. Use it to
+reproduce or compare with results from other tools. As the next section
+shows, it is too short for most matching tasks.</li>
+</ul>
+<p>With <code>by_word = TRUE</code> the limit applies to each word
+separately.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">double_metaphone</span>(long_name, <span class="at">by_word =</span> <span class="cn">TRUE</span>, <span class="at">max_length =</span> <span class="dv">4</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt;               primary           secondary</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt; 1 KRST ALKS MNTK FTSK KRST ALKS MNTK FTSJ</span></span></code></pre></div>
+<p>Codes made with different lengths cannot be compared with each other,
+so use the same <code>max_length</code> for all data that you want to
+match.</p>
+</div>
+<div id="how-the-codes-are-built" class="section level2">
+<h2>How the codes are built</h2>
+<p>A code keeps the consonant sounds of a word and drops most vowels.
+Some rules are easy to recognise. A “ph” sounds like F, initial “kn”,
+“gn” and “wr” lose their silent first letter, and “th” becomes the digit
+<code>0</code> because it looks like the Greek letter theta.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>rules <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Philip&quot;</span>, <span class="st">&quot;Knight&quot;</span>, <span class="st">&quot;Wright&quot;</span>, <span class="st">&quot;Gnome&quot;</span>, <span class="st">&quot;Thomas&quot;</span>, <span class="st">&quot;Laugh&quot;</span>,</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>           <span class="st">&quot;Dumb&quot;</span>, <span class="st">&quot;Edge&quot;</span>, <span class="st">&quot;Xavier&quot;</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">word =</span> rules, <span class="at">metaphone =</span> <span class="fu">metaphone</span>(rules),</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>           <span class="fu">double_metaphone</span>(rules))</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt;     word metaphone primary secondary</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; 1 Philip       FLP     FLP       FLP</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">#&gt; 2 Knight        NT      NT        NT</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt; 3 Wright        RT      RT        RT</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; 4  Gnome        NM      NM        NM</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; 5 Thomas       0MS     TMS       TMS</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; 6  Laugh         L      LF        LF</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt; 7   Dumb        TM      TM        TM</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co">#&gt; 8   Edge        EJ      AJ        AJ</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt; 9 Xavier       SFR      SF       SFR</span></span></code></pre></div>
+<p>Double Metaphone has many more rules than Metaphone, mostly for names
+from other languages. Where a name is pronounced differently in its
+language of origin and in English, the secondary code gives the second
+reading.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>foreign <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Schmidt&quot;</span>, <span class="st">&quot;Michael&quot;</span>, <span class="st">&quot;Jose&quot;</span>, <span class="st">&quot;Tagliaro&quot;</span>, <span class="st">&quot;Czerny&quot;</span>,</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>             <span class="st">&quot;Wasserman&quot;</span>, <span class="st">&quot;Zhao&quot;</span>, <span class="st">&quot;Breaux&quot;</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">word =</span> foreign, <span class="fu">double_metaphone</span>(foreign))</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt;        word primary secondary</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt; 1   Schmidt     XMT       SMT</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt; 2   Michael     MKL       MXL</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; 3      Jose      HS        HS</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; 4  Tagliaro    TKLR       TLR</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; 5    Czerny     SRN       XRN</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; 6 Wasserman   ASRMN     FSRMN</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; 7      Zhao       J         J</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; 8    Breaux      PR        PR</span></span></code></pre></div>
+<p>So “Schmidt” has the primary code <code>XMT</code>, as it is said in
+German, and the secondary code <code>SMT</code>, as an English speaker
+might say it. “Smith” has the codes <code>SM0</code> and
+<code>XMT</code>. The two names share <code>XMT</code>, so they are
+treated as possible matches. Philips recommended exactly this
+comparison. Two names match if any code of one equals any code of the
+other, and <code>sounds_like()</code> applies it.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">sounds_like</span>(<span class="st">&quot;Smith&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;Schmidt&quot;</span>, <span class="st">&quot;Smyth&quot;</span>, <span class="st">&quot;Smythe&quot;</span>, <span class="st">&quot;Jones&quot;</span>))</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co">#&gt; [1]  TRUE  TRUE  TRUE FALSE</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">sounds_like</span>(<span class="st">&quot;Wasserman&quot;</span>, <span class="st">&quot;Vasserman&quot;</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>The original Metaphone gives only one code, so it is stricter.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">sounds_like</span>(<span class="st">&quot;Smith&quot;</span>, <span class="st">&quot;Schmidt&quot;</span>, <span class="at">method =</span> <span class="st">&quot;metaphone&quot;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co">#&gt; [1] FALSE</span></span></code></pre></div>
+</div>
+<div id="why-full-length-codes" class="section level2">
+<h2>Why full-length codes</h2>
+<p>This section compares the default codes with codes cut to four
+characters, using <code>max_length = 4</code>. Philips’ original
+programs, and most later implementations such as
+<code>PGRdup::DoubleMetaphone()</code>, return only the first four
+characters of each code. Four characters were enough for building search
+indexes of English surnames in the 1990s. They are not enough for many
+tasks today, because different names that merely start alike end up with
+the same code.</p>
+<p>The package includes <code>us_surnames</code>, the 5000 most common
+surnames in the 2010 United States Census.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">head</span>(us_surnames)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&gt;    surname rank   count</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; 1    Smith    1 2442977</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; 2  Johnson    2 1932812</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; 3 Williams    3 1625252</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt; 4    Brown    4 1437026</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; 5    Jones    5 1425470</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt; 6   Garcia    6 1166120</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>codes_full <span class="ot">&lt;-</span> <span class="fu">double_metaphone</span>(us_surnames<span class="sc">$</span>surname)<span class="sc">$</span>primary</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>codes_four <span class="ot">&lt;-</span> <span class="fu">double_metaphone</span>(us_surnames<span class="sc">$</span>surname, <span class="at">max_length =</span> <span class="dv">4</span>)<span class="sc">$</span>primary</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">unique</span>(codes_full))</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt; [1] 2344</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">unique</span>(codes_four))</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt; [1] 1957</span></span></code></pre></div>
+<p>Even for single surnames, which are short, cutting the codes to four
+characters removes almost 400 distinct codes, merging surnames that
+sound different. Here is one four-character code and the surnames behind
+it.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>group <span class="ot">&lt;-</span> codes_four <span class="sc">==</span> <span class="st">&quot;ALTR&quot;</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">surname =</span> us_surnames<span class="sc">$</span>surname[group],</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>           <span class="at">four =</span> codes_four[group],</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>           <span class="at">full =</span> codes_full[group])</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt;       surname four   full</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt; 1     Walters ALTR  ALTRS</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt; 2      Walter ALTR   ALTR</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt; 3      Wilder ALTR   ALTR</span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt; 4       Elder ALTR   ALTR</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt; 5    Eldridge ALTR  ALTRJ</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt; 6    Aldridge ALTR  ALTRJ</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt; 7     Aldrich ALTR  ALTRX</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; 8     Waldron ALTR  ALTRN</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="co">#&gt; 9     Waldrop ALTR  ALTRP</span></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt; 10   Alderman ALTR ALTRMN</span></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt; 11 Wooldridge ALTR  ALTRJ</span></span></code></pre></div>
+<p>With four characters, Walter, Waldron, Aldrich and Alderman look
+alike. With full codes, only Walter, Wilder and Elder remain
+together.</p>
+<p>The effect is much stronger for full names, which are what most
+record linkage tasks deal with. The example below pairs common first
+names from several countries with the census surnames.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>first_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;James&quot;</span>, <span class="st">&quot;Mary&quot;</span>, <span class="st">&quot;Robert&quot;</span>, <span class="st">&quot;Patricia&quot;</span>, <span class="st">&quot;John&quot;</span>,</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>                 <span class="st">&quot;Jennifer&quot;</span>, <span class="st">&quot;Michael&quot;</span>, <span class="st">&quot;Linda&quot;</span>, <span class="st">&quot;David&quot;</span>, <span class="st">&quot;Elizabeth&quot;</span>,</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>                 <span class="st">&quot;Christopher&quot;</span>, <span class="st">&quot;Sarah&quot;</span>, <span class="st">&quot;Maria&quot;</span>, <span class="st">&quot;Jose&quot;</span>, <span class="st">&quot;Juan&quot;</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>                 <span class="st">&quot;Mohammed&quot;</span>, <span class="st">&quot;Ahmed&quot;</span>, <span class="st">&quot;Wei&quot;</span>, <span class="st">&quot;Anna&quot;</span>, <span class="st">&quot;Sophie&quot;</span>, <span class="st">&quot;Lukas&quot;</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>                 <span class="st">&quot;Pierre&quot;</span>, <span class="st">&quot;Giovanni&quot;</span>, <span class="st">&quot;Olga&quot;</span>, <span class="st">&quot;Katarzyna&quot;</span>, <span class="st">&quot;Priya&quot;</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>people <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">paste</span>(<span class="fu">sample</span>(first_names, <span class="dv">5000</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>                       <span class="fu">sample</span>(us_surnames<span class="sc">$</span>surname, <span class="dv">5000</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)))</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="fu">length</span>(people)</span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co">#&gt; [1] 4914</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">unique</span>(<span class="fu">double_metaphone</span>(people)<span class="sc">$</span>primary))</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="co">#&gt; [1] 4243</span></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">unique</span>(<span class="fu">double_metaphone</span>(people, <span class="at">max_length =</span> <span class="dv">4</span>)<span class="sc">$</span>primary))</span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co">#&gt; [1] 875</span></span></code></pre></div>
+<p>With four-character codes, the code of a full name is little more
+than the code of the first name. Almost 5000 different people share
+fewer than 900 codes, so on average about five or six unrelated people
+would be flagged as one. Full codes keep most of them apart.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>cr <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Christopher Anderson&quot;</span>, <span class="st">&quot;Christina Andrews&quot;</span>, <span class="st">&quot;Christopher Andersen&quot;</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">name =</span> cr,</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>           <span class="at">four =</span> <span class="fu">double_metaphone</span>(cr, <span class="at">max_length =</span> <span class="dv">4</span>)<span class="sc">$</span>primary,</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>           <span class="at">full =</span> <span class="fu">double_metaphone</span>(cr)<span class="sc">$</span>primary)</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="co">#&gt;                   name four        full</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co">#&gt; 1 Christopher Anderson KRST KRSTFRNTRSN</span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a><span class="co">#&gt; 2    Christina Andrews KRST   KRSTNNTRS</span></span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="co">#&gt; 3 Christopher Andersen KRST KRSTFRNTRSN</span></span></code></pre></div>
+</div>
+<div id="example-1.-finding-duplicate-records" class="section level2">
+<h2>Example 1. Finding duplicate records</h2>
+<p>A typical task is to find records in one table that may describe the
+same person. In this small contact list, several people were entered
+twice with different spellings.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>contacts <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  <span class="at">id    =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>,</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="at">first =</span> <span class="fu">c</span>(<span class="st">&quot;Catherine&quot;</span>, <span class="st">&quot;Katherine&quot;</span>, <span class="st">&quot;Stephen&quot;</span>, <span class="st">&quot;Steven&quot;</span>, <span class="st">&quot;Mohammed&quot;</span>,</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>            <span class="st">&quot;Muhammad&quot;</span>, <span class="st">&quot;Jeffrey&quot;</span>, <span class="st">&quot;Geoffrey&quot;</span>, <span class="st">&quot;Anne&quot;</span>, <span class="st">&quot;Ann&quot;</span>, <span class="st">&quot;Sean&quot;</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>            <span class="st">&quot;Shaun&quot;</span>),</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  <span class="at">last  =</span> <span class="fu">c</span>(<span class="st">&quot;Smith&quot;</span>, <span class="st">&quot;Smyth&quot;</span>, <span class="st">&quot;Phillips&quot;</span>, <span class="st">&quot;Philips&quot;</span>, <span class="st">&quot;Ali&quot;</span>, <span class="st">&quot;Aly&quot;</span>,</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>            <span class="st">&quot;Wasserman&quot;</span>, <span class="st">&quot;Vasserman&quot;</span>, <span class="st">&quot;Thompson&quot;</span>, <span class="st">&quot;Thomson&quot;</span>, <span class="st">&quot;O&#39;Neill&quot;</span>,</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>            <span class="st">&quot;O&#39;Neil&quot;</span>),</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>  <span class="at">city  =</span> <span class="fu">c</span>(<span class="st">&quot;Leeds&quot;</span>, <span class="st">&quot;Leeds&quot;</span>, <span class="st">&quot;Boston&quot;</span>, <span class="st">&quot;Boston&quot;</span>, <span class="st">&quot;Toronto&quot;</span>, <span class="st">&quot;Toronto&quot;</span>,</span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>            <span class="st">&quot;Chicago&quot;</span>, <span class="st">&quot;Chicago&quot;</span>, <span class="st">&quot;Sydney&quot;</span>, <span class="st">&quot;Sydney&quot;</span>, <span class="st">&quot;Dublin&quot;</span>, <span class="st">&quot;Dublin&quot;</span>)</span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>)</span></code></pre></div>
+<p>Comparing every record with every other record is fine for a few
+hundred rows, but for large tables it is too slow. The usual approach,
+called blocking, first groups records that share a cheap key and only
+compares records within a group. A natural first try is to use the
+primary code of the surname as the key, together with the city.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>contacts<span class="sc">$</span>key <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="fu">double_metaphone</span>(contacts<span class="sc">$</span>last)<span class="sc">$</span>primary,</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>                      contacts<span class="sc">$</span>city)</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>pairs <span class="ot">&lt;-</span> <span class="fu">merge</span>(contacts, contacts, <span class="at">by =</span> <span class="st">&quot;key&quot;</span>, <span class="at">suffixes =</span> <span class="fu">c</span>(<span class="st">&quot;_a&quot;</span>, <span class="st">&quot;_b&quot;</span>))</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>pairs <span class="ot">&lt;-</span> pairs[pairs<span class="sc">$</span>id_a <span class="sc">&lt;</span> pairs<span class="sc">$</span>id_b, ]</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>pairs<span class="sc">$</span>first_match <span class="ot">&lt;-</span> <span class="fu">sounds_like</span>(pairs<span class="sc">$</span>first_a, pairs<span class="sc">$</span>first_b)</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>pairs[, <span class="fu">c</span>(<span class="st">&quot;first_a&quot;</span>, <span class="st">&quot;last_a&quot;</span>, <span class="st">&quot;first_b&quot;</span>, <span class="st">&quot;last_b&quot;</span>, <span class="st">&quot;first_match&quot;</span>)]</span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt;      first_a   last_a   first_b  last_b first_match</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt; 2   Mohammed      Ali  Muhammad     Aly        TRUE</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co">#&gt; 6       Sean  O&#39;Neill     Shaun  O&#39;Neil       FALSE</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co">#&gt; 11   Stephen Phillips    Steven Philips        TRUE</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#&gt; 16 Catherine    Smith Katherine   Smyth        TRUE</span></span></code></pre></div>
+<p>Four pairs share a block, and in three of them the first names also
+sound alike. The Wasserman pair is missing, because “Wasserman” and
+“Vasserman” have different primary codes, <code>ASRMN</code> and
+<code>FSRMN</code>. They share only a secondary code. A key built from
+one code cannot see that, while <code>sounds_like()</code> compares all
+four combinations of primary and secondary codes. So a better plan is to
+block on something simpler, here the city, and to compare names with
+<code>sounds_like()</code> inside each block.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>pairs <span class="ot">&lt;-</span> <span class="fu">merge</span>(contacts, contacts, <span class="at">by =</span> <span class="st">&quot;city&quot;</span>, <span class="at">suffixes =</span> <span class="fu">c</span>(<span class="st">&quot;_a&quot;</span>, <span class="st">&quot;_b&quot;</span>))</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>pairs <span class="ot">&lt;-</span> pairs[pairs<span class="sc">$</span>id_a <span class="sc">&lt;</span> pairs<span class="sc">$</span>id_b, ]</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>same_person <span class="ot">&lt;-</span> <span class="fu">sounds_like</span>(pairs<span class="sc">$</span>last_a, pairs<span class="sc">$</span>last_b) <span class="sc">&amp;</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>  <span class="fu">sounds_like</span>(pairs<span class="sc">$</span>first_a, pairs<span class="sc">$</span>first_b)</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>pairs[same_person, <span class="fu">c</span>(<span class="st">&quot;id_a&quot;</span>, <span class="st">&quot;first_a&quot;</span>, <span class="st">&quot;last_a&quot;</span>, <span class="st">&quot;id_b&quot;</span>, <span class="st">&quot;first_b&quot;</span>, <span class="st">&quot;last_b&quot;</span>)]</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt;    id_a   first_a    last_a id_b   first_b    last_b</span></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="co">#&gt; 2     3   Stephen  Phillips    4    Steven   Philips</span></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co">#&gt; 6     7   Jeffrey Wasserman    8  Geoffrey Vasserman</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="co">#&gt; 14    1 Catherine     Smith    2 Katherine     Smyth</span></span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="co">#&gt; 22    5  Mohammed       Ali    6  Muhammad       Aly</span></span></code></pre></div>
+<p>Now four of the six planted duplicates are found. Jeffrey and
+Geoffrey match through the shared code <code>JFR</code>. The other two
+pairs show the limits of the method. “Thompson” and “Thomson” get
+different codes, <code>TMPSN</code> and <code>TMSN</code>, because the P
+in Thompson is coded although it is barely pronounced. “Sean” and
+“Shaun” differ because the Irish “Se” is read by the English rule as S.
+Phonetic codes reduce the problem of spelling variation, but they do not
+remove it. The section on good practice below suggests ways to catch
+more.</p>
+</div>
+<div id="example-2.-linking-two-tables" class="section level2">
+<h2>Example 2. Linking two tables</h2>
+<p>The same technique links records across two sources, for example a
+membership list and a donations file kept by different staff.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>members <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="at">member_id =</span> <span class="fu">c</span>(<span class="st">&quot;M1&quot;</span>, <span class="st">&quot;M2&quot;</span>, <span class="st">&quot;M3&quot;</span>, <span class="st">&quot;M4&quot;</span>, <span class="st">&quot;M5&quot;</span>),</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  <span class="at">name =</span> <span class="fu">c</span>(<span class="st">&quot;Jon Schmidt&quot;</span>, <span class="st">&quot;Maria Gonzalez&quot;</span>, <span class="st">&quot;Peter Kowalski&quot;</span>,</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>           <span class="st">&quot;Claire Dubois&quot;</span>, <span class="st">&quot;Hans Meyer&quot;</span>)</span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>)</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>donations <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>  <span class="at">receipt =</span> <span class="fu">c</span>(<span class="st">&quot;R1&quot;</span>, <span class="st">&quot;R2&quot;</span>, <span class="st">&quot;R3&quot;</span>, <span class="st">&quot;R4&quot;</span>, <span class="st">&quot;R5&quot;</span>, <span class="st">&quot;R6&quot;</span>),</span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>  <span class="at">donor =</span> <span class="fu">c</span>(<span class="st">&quot;John Smith&quot;</span>, <span class="st">&quot;Mariah Gonzales&quot;</span>, <span class="st">&quot;Piotr Kowalsky&quot;</span>,</span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a>            <span class="st">&quot;Clare Du Bois&quot;</span>, <span class="st">&quot;Hans Maier&quot;</span>, <span class="st">&quot;Helen Mayer&quot;</span>),</span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a>  <span class="at">amount =</span> <span class="fu">c</span>(<span class="dv">50</span>, <span class="dv">120</span>, <span class="dv">75</span>, <span class="dv">200</span>, <span class="dv">30</span>, <span class="dv">90</span>)</span>
+<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a>)</span></code></pre></div>
+<p>Split the names into first and last names, then block on the surname
+code.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>split_name <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>  parts <span class="ot">&lt;-</span> <span class="fu">strsplit</span>(x, <span class="st">&quot; &quot;</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>  <span class="fu">data.frame</span>(<span class="at">first =</span> <span class="fu">vapply</span>(parts, <span class="st">`</span><span class="at">[</span><span class="st">`</span>, <span class="st">&quot;&quot;</span>, <span class="dv">1</span>),</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>             <span class="at">last  =</span> <span class="fu">vapply</span>(parts, <span class="cf">function</span>(p) <span class="fu">paste</span>(p[<span class="sc">-</span><span class="dv">1</span>], <span class="at">collapse =</span> <span class="st">&quot; &quot;</span>), <span class="st">&quot;&quot;</span>))</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>}</span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>members   <span class="ot">&lt;-</span> <span class="fu">cbind</span>(members, <span class="fu">split_name</span>(members<span class="sc">$</span>name))</span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>donations <span class="ot">&lt;-</span> <span class="fu">cbind</span>(donations, <span class="fu">split_name</span>(donations<span class="sc">$</span>donor))</span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a>members<span class="sc">$</span>block   <span class="ot">&lt;-</span> <span class="fu">double_metaphone</span>(members<span class="sc">$</span>last)<span class="sc">$</span>primary</span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a>donations<span class="sc">$</span>block <span class="ot">&lt;-</span> <span class="fu">double_metaphone</span>(donations<span class="sc">$</span>last)<span class="sc">$</span>primary</span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a>candidates <span class="ot">&lt;-</span> <span class="fu">merge</span>(members, donations, <span class="at">by =</span> <span class="st">&quot;block&quot;</span>)</span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a>candidates[, <span class="fu">c</span>(<span class="st">&quot;name&quot;</span>, <span class="st">&quot;donor&quot;</span>, <span class="st">&quot;block&quot;</span>)]</span>
+<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a><span class="co">#&gt;             name           donor block</span></span>
+<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a><span class="co">#&gt; 1 Peter Kowalski  Piotr Kowalsky  KLSK</span></span>
+<span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a><span class="co">#&gt; 2 Maria Gonzalez Mariah Gonzales KNSLS</span></span>
+<span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a><span class="co">#&gt; 3     Hans Meyer      Hans Maier    MR</span></span>
+<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a><span class="co">#&gt; 4     Hans Meyer     Helen Mayer    MR</span></span>
+<span id="cb17-18"><a href="#cb17-18" tabindex="-1"></a><span class="co">#&gt; 5  Claire Dubois   Clare Du Bois    TP</span></span></code></pre></div>
+<p>Joining on the primary code alone misses names whose primary codes
+differ but whose secondary codes match, such as “Schmidt” and “Smith”.
+As in the first example, it is more thorough to compare names with
+<code>sounds_like()</code>, which checks all four combinations of codes.
+With small tables every member can be compared with every donor. With
+large ones, block on something broader first, such as the first letter
+of the surname or a postcode.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>all_pairs <span class="ot">&lt;-</span> <span class="fu">merge</span>(members, donations, <span class="at">by =</span> <span class="cn">NULL</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>all_pairs <span class="ot">&lt;-</span> all_pairs[<span class="fu">sounds_like</span>(all_pairs<span class="sc">$</span>last.x, all_pairs<span class="sc">$</span>last.y) <span class="sc">&amp;</span></span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>                       <span class="fu">sounds_like</span>(all_pairs<span class="sc">$</span>first.x, all_pairs<span class="sc">$</span>first.y), ]</span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>all_pairs[, <span class="fu">c</span>(<span class="st">&quot;member_id&quot;</span>, <span class="st">&quot;name&quot;</span>, <span class="st">&quot;receipt&quot;</span>, <span class="st">&quot;donor&quot;</span>, <span class="st">&quot;amount&quot;</span>)]</span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="co">#&gt;    member_id           name receipt           donor amount</span></span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="co">#&gt; 1         M1    Jon Schmidt      R1      John Smith     50</span></span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="co">#&gt; 7         M2 Maria Gonzalez      R2 Mariah Gonzales    120</span></span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a><span class="co">#&gt; 13        M3 Peter Kowalski      R3  Piotr Kowalsky     75</span></span>
+<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a><span class="co">#&gt; 19        M4  Claire Dubois      R4   Clare Du Bois    200</span></span>
+<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a><span class="co">#&gt; 25        M5     Hans Meyer      R5      Hans Maier     30</span></span></code></pre></div>
+<p>Here <code>merge(..., by = NULL)</code> forms all combinations, which
+is only sensible for small tables. To rank the candidate pairs, a string
+distance such as the generalised Levenshtein distance from base R’s
+<code>adist()</code> is a useful second opinion.</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>all_pairs<span class="sc">$</span>distance <span class="ot">&lt;-</span> <span class="fu">diag</span>(<span class="fu">adist</span>(all_pairs<span class="sc">$</span>name, all_pairs<span class="sc">$</span>donor))</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>all_pairs[<span class="fu">order</span>(all_pairs<span class="sc">$</span>distance),</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>          <span class="fu">c</span>(<span class="st">&quot;name&quot;</span>, <span class="st">&quot;donor&quot;</span>, <span class="st">&quot;distance&quot;</span>)]</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="co">#&gt;              name           donor distance</span></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="co">#&gt; 7  Maria Gonzalez Mariah Gonzales        2</span></span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a><span class="co">#&gt; 25     Hans Meyer      Hans Maier        2</span></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="co">#&gt; 19  Claire Dubois   Clare Du Bois        3</span></span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a><span class="co">#&gt; 13 Peter Kowalski  Piotr Kowalsky        4</span></span>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a><span class="co">#&gt; 1     Jon Schmidt      John Smith        5</span></span></code></pre></div>
+<p>Small distances suggest near-identical spellings. Larger ones, such
+as “Jon Schmidt” and “John Smith”, are worth a closer look by a person
+before the records are merged.</p>
+</div>
+<div id="example-3.-searching-a-register-by-sound" class="section level2">
+<h2>Example 3. Searching a register by sound</h2>
+<p>Genealogists, call centres and archivists often need to look up a
+name that was heard rather than read. <code>sounds_like()</code> with a
+single name on one side searches a whole register at once.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>hits <span class="ot">&lt;-</span> us_surnames[<span class="fu">sounds_like</span>(<span class="st">&quot;Meyer&quot;</span>, us_surnames<span class="sc">$</span>surname), ]</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a><span class="fu">head</span>(hits[<span class="fu">order</span>(<span class="sc">-</span>hits<span class="sc">$</span>count), ], <span class="dv">10</span>)</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="co">#&gt;      surname rank  count</span></span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="co">#&gt; 18     Moore   18 724374</span></span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a><span class="co">#&gt; 136   Murray  136 184910</span></span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="co">#&gt; 183    Meyer  183 150895</span></span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="co">#&gt; 583     Mora  583  57464</span></span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a><span class="co">#&gt; 594   Morrow  594  56840</span></span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="co">#&gt; 757  Murillo  757  45558</span></span>
+<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a><span class="co">#&gt; 880    Mayer  880  39555</span></span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a><span class="co">#&gt; 935    Moyer  935  37050</span></span>
+<span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a><span class="co">#&gt; 1391   Meier 1391  25486</span></span>
+<span id="cb20-13"><a href="#cb20-13" tabindex="-1"></a><span class="co">#&gt; 2106    Mohr 2106  17180</span></span></code></pre></div>
+<p>The search finds the expected spellings, Meyer, Mayer, Meier, Maier
+and Moyer, but also Moore, Murray and others. Double Metaphone drops
+vowels, so all names with an M followed by an R sound fall together.
+Full-length codes keep longer names apart, but for short names a
+phonetic search gives a candidate list to review, not a final answer.
+Adding a string distance helps to put the closest spellings first.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>hits<span class="sc">$</span>distance <span class="ot">&lt;-</span> <span class="fu">adist</span>(<span class="st">&quot;Meyer&quot;</span>, hits<span class="sc">$</span>surname)[<span class="dv">1</span>, ]</span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="fu">head</span>(hits[<span class="fu">order</span>(hits<span class="sc">$</span>distance, <span class="sc">-</span>hits<span class="sc">$</span>count), ], <span class="dv">6</span>)</span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="co">#&gt;      surname rank  count distance</span></span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a><span class="co">#&gt; 183    Meyer  183 150895        0</span></span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a><span class="co">#&gt; 880    Mayer  880  39555        1</span></span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a><span class="co">#&gt; 935    Moyer  935  37050        1</span></span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a><span class="co">#&gt; 1391   Meier 1391  25486        1</span></span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a><span class="co">#&gt; 2557   Maier 2557  14135        2</span></span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a><span class="co">#&gt; 2106    Mohr 2106  17180        3</span></span></code></pre></div>
+</div>
+<div id="names-with-several-words" class="section level2">
+<h2>Names with several words</h2>
+<p>By default the whole text is encoded as one string, exactly as the
+original algorithm does. Spaces are kept while encoding, and a few rules
+depend on them, for example the Spanish “San” or the Dutch and German
+“Van” and “Von”. The resulting code runs the words together.</p>
+<p>With <code>by_word = TRUE</code> each word is encoded separately and
+the codes are joined by spaces. This keeps the structure of the name and
+lets you compare the parts on their own.</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="fu">double_metaphone</span>(<span class="st">&quot;Maria Gonzalez Lopez&quot;</span>)</span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="co">#&gt;      primary  secondary</span></span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="co">#&gt; 1 MRKNSLSLPS MRKNSLSLPS</span></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="fu">double_metaphone</span>(<span class="st">&quot;Maria Gonzalez Lopez&quot;</span>, <span class="at">by_word =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="co">#&gt;        primary    secondary</span></span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a><span class="co">#&gt; 1 MR KNSLS LPS MR KNSLS LPS</span></span></code></pre></div>
+<p>Whole-string codes are useful when the spacing of a name varies, as
+in “Du Bois” and “Dubois”. Word-by-word codes are useful when the order
+of the parts varies, as in many registers that record the family name
+first. Sorting the word codes makes the comparison independent of
+order.</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">sounds_like</span>(<span class="st">&quot;Pierre Dubois&quot;</span>, <span class="st">&quot;Pierre Du Bois&quot;</span>)</span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a>codes <span class="ot">&lt;-</span> <span class="fu">metaphone</span>(<span class="fu">c</span>(<span class="st">&quot;Wei Zhang&quot;</span>, <span class="st">&quot;Zhang Wei&quot;</span>), <span class="at">by_word =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a>sorted <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="fu">strsplit</span>(codes, <span class="st">&quot; &quot;</span>),</span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a>                 <span class="cf">function</span>(w) <span class="fu">paste</span>(<span class="fu">sort</span>(w), <span class="at">collapse =</span> <span class="st">&quot; &quot;</span>), <span class="st">&quot;&quot;</span>)</span>
+<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a>sorted</span>
+<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="co">#&gt; [1] &quot;SHNK W&quot; &quot;SHNK W&quot;</span></span></code></pre></div>
+</div>
+<div id="working-with-data-frames-and-the-tidyverse" class="section level2">
+<h2>Working with data frames and the tidyverse</h2>
+<p><code>double_metaphone()</code> returns a data frame, so its result
+can be bound to an existing table with <code>cbind()</code>.</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>staff <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">name =</span> <span class="fu">c</span>(<span class="st">&quot;Stephen Phillips&quot;</span>, <span class="st">&quot;Steven Philips&quot;</span>))</span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">cbind</span>(staff, <span class="fu">double_metaphone</span>(staff<span class="sc">$</span>name))</span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="co">#&gt;               name  primary secondary</span></span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="co">#&gt; 1 Stephen Phillips STFNFLPS  STFNFLPS</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="co">#&gt; 2   Steven Philips STFNFLPS  STFNFLPS</span></span></code></pre></div>
+<p>In ‘dplyr’, a data frame returned inside <code>mutate()</code>
+without a name is unpacked into separate columns.</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">library</span>(dplyr, <span class="at">warn.conflicts =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="fu">mutate</span>(staff,</span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a>       <span class="fu">double_metaphone</span>(name),</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a>       <span class="at">metaphone =</span> <span class="fu">metaphone</span>(name))</span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a><span class="co">#&gt;               name  primary secondary metaphone</span></span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a><span class="co">#&gt; 1 Stephen Phillips STFNFLPS  STFNFLPS  STFNFLPS</span></span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a><span class="co">#&gt; 2   Steven Philips STFNFLPS  STFNFLPS  STFNFLPS</span></span></code></pre></div>
+</div>
+<div id="good-practice-and-limits" class="section level2">
+<h2>Good practice and limits</h2>
+<p>Phonetic codes work best as one step in a matching process, not as
+the whole of it. The following points come up in almost every real
+project.</p>
+<ul>
+<li><strong>Standardise first.</strong> Remove titles and suffixes such
+as Mr, Dr, Jr and Ltd, and expand common abbreviations, before computing
+codes. Codes cannot know that “St” means Saint or Street.</li>
+<li><strong>Handle nicknames separately.</strong> Bill and William, or
+Peggy and Margaret, do not sound alike. A lookup table of nicknames is
+needed for these.</li>
+<li><strong>Expect some misses.</strong> As shown above, Thompson and
+Thomson or Sean and Shaun get different codes. Combining a phonetic key
+with a string distance catches many of these.</li>
+<li><strong>Expect some false matches.</strong> Short codes such as
+<code>MR</code> are shared by many names. Confirm candidate matches with
+other fields, such as a date of birth, address or identification
+number.</li>
+<li><strong>Use Latin letters.</strong> The algorithms are designed for
+names written in the Latin alphabet. Accented letters are converted to
+plain ones, but names in other scripts, such as Arabic, Chinese,
+Cyrillic or Devanagari, should be transliterated first. Note that a
+single name can be romanised in several ways, as with Zhang and
+Chang.</li>
+<li><strong>Compare like with like.</strong> Codes from
+<code>max_length = 4</code>, from <code>by_word = TRUE</code> and from
+the default settings are not comparable with each other.</li>
+</ul>
+</div>
+<div id="related-packages" class="section level2">
+<h2>Related packages</h2>
+<ul>
+<li><a href="https://CRAN.R-project.org/package=PGRdup">‘PGRdup’</a> was
+the first package to bring Double Metaphone to R, as part of a toolkit
+for finding duplicate accessions in plant genetic resource collections.
+Its <code>DoubleMetaphone()</code> function returns four-character
+codes. This package uses the same rules, so its codes cut to four
+characters agree with PGRdup’s, apart from a few corrections described
+in the package README.</li>
+<li><a href="https://CRAN.R-project.org/package=phonics">‘phonics’</a>
+provides many phonetic algorithms, including Soundex, NYSIIS, Caverphone
+and Metaphone, but not Double Metaphone.</li>
+<li><a href="https://CRAN.R-project.org/package=stringdist">‘stringdist’</a>
+computes a wide range of string distances and includes Soundex.</li>
+<li><a href="https://CRAN.R-project.org/package=RecordLinkage">‘RecordLinkage’</a>
+and <a href="https://CRAN.R-project.org/package=fastLink">‘fastLink’</a>
+provide complete record linkage frameworks, in which phonetic codes can
+serve as blocking keys or comparison fields.</li>
+</ul>
+</div>
+<div id="credits" class="section level2">
+<h2>Credits</h2>
+<p>Lawrence Philips designed both algorithms. The Double Metaphone rules
+in this package are a translation of the C implementation by Maurice
+Aubrey in the Perl module <a href="https://metacpan.org/pod/Text::DoubleMetaphone">Text::DoubleMetaphone</a>,
+which includes fixes by Kevin Atkinson. The Metaphone rules and the
+reference test data come from <a href="https://commons.apache.org/proper/commons-codec/">Apache Commons
+Codec</a>. The <code>us_surnames</code> data come from the <a href="https://www.census.gov/topics/population/genealogy/data/2010_surnames.html">United
+States Census Bureau</a>.</p>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>Philips, L. (1990). Hanging on the metaphone. <em>Computer
+Language</em>, 7(12), 38-43.</p>
+<p>Philips, L. (2000). The double metaphone search algorithm. <em>C/C++
+Users Journal</em>, 18(6), 38-43. <a href="https://web.archive.org/web/20250702064845/https://drdobbs.com/the-double-metaphone-search-algorithm/184401251">Archived
+copy</a>.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
